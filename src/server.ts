@@ -1,9 +1,9 @@
 import Fastify from "fastify";
 import { setupSwagger } from './swagger';
-
 import { sequelize } from "./config/database";
 import { redis } from "./config/redis";
 import { env } from "./config/env";
+import { tcgRoutes } from "./routes/shared/tcgRoutes";
 
 const server = Fastify({ logger: true });
 
@@ -12,6 +12,8 @@ setupSwagger(server);
 server.get("/", async (request, reply) => {
   return { message: "Hello, TypeScript with Fastify!" };
 });
+
+server.register(tcgRoutes, { prefix: '/v1' });
 
 const start = async () => {
   try {
