@@ -1,0 +1,50 @@
+{
+  "name": "card-nexus-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "NODE_ENV=test jest --runInBand"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Card-Nexus/card-nexus-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Card-Nexus/card-nexus-api/issues"
+  },
+  "homepage": "https://github.com/Card-Nexus/card-nexus-api#readme",
+  "dependencies": {
+    "@fastify/rate-limit": "^10.2.2",
+    "@fastify/swagger-ui": "^5.2.2",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "fastify-autoload": "^3.12.0",
+    "fastify-cors": "^6.0.3",
+    "fastify-env": "^2.1.1",
+    "fastify-redis": "^4.3.3",
+    "fastify-swagger": "^5.1.1",
+    "ioredis": "^5.5.0",
+    "pg": "^8.13.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.5"
+  },
+  "devDependencies": {
+    "@fastify/type-provider-typebox": "^5.1.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.8",
+    "@types/sequelize": "^4.28.20",
+    "@types/supertest": "^6.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
