@@ -3,7 +3,7 @@ import { setupSwagger } from './swagger';
 import { sequelize } from "./config/database";
 import { redis } from "./config/redis";
 import { env } from "./config/env";
-import { tcgRoutes } from "./routes/shared/tcgRoutes";
+import { tcgRoutes } from "./routes/tcgRoutes";
 
 const server = Fastify({ logger: true });
 

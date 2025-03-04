@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import {TCG} from '../../models/shared/tcg'
+import {TCG} from '../models/tcgModels'
 import { Op } from "sequelize";
 
 interface TCGParams {

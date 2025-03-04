@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import * as TCGController from "./../../controllers/shared/tcgController";
+import * as TCGController from "../controllers/tcgController";
 
 export const tcgRoutes = async (server: FastifyInstance) => {
   server.get("/tcg", TCGController.getAllTCGs); // Route for fetching all TCGs
