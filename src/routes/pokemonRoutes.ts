@@ -16,5 +16,5 @@ export default async function pokemonRoutes(fastify: FastifyInstance) {
   fastify.get("/sets/:identifier", getSetByIdentifier);
 
   fastify.get("/cards", getAllCards);
-  fastify.get("/card/:identifier", getCardByIdentifier);
+  fastify.get("/cards/:identifier", getCardByIdentifier);
 }

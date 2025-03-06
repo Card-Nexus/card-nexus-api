@@ -177,7 +177,7 @@ pkmnSet.init({
 
 //////////////////// pkmnCard ////////////////////
 
-export class pkmnCard extends Model<pkmnCardAttributes> implements pkmnCardAttributes {
+export class PkmnCard extends Model<pkmnCardAttributes> implements pkmnCardAttributes {
     public id!: string;
     public name!: string;
     public slug!: string;
@@ -185,7 +185,7 @@ export class pkmnCard extends Model<pkmnCardAttributes> implements pkmnCardAttri
     public details!: PkmnCardDetails;
 }
 
-pkmnCard.init({
+PkmnCard.init({
     id: {
         type: DataTypes.UUID,
         primaryKey: true,
@@ -220,11 +220,11 @@ pkmnCard.init({
 
 //////////////////// RELATIONSHIPS ////////////////////
 
-pkmnEra.hasMany(pkmnSet, {foreignKey: "eraId"})
-pkmnSet.belongsTo(pkmnEra, {foreignKey: "eraId"})
+pkmnEra.hasMany(pkmnSet, {foreignKey: "eraId", as: 'sets'})
+pkmnSet.belongsTo(pkmnEra, {foreignKey: "eraId", as: 'era'})
 
-TCG.hasMany(pkmnSet, {foreignKey: "tcgId"})
-pkmnSet.belongsTo(TCG, {foreignKey: "tcgId"})
+TCG.hasMany(pkmnSet, {foreignKey: "tcgId", as: 'pokemonSets'})
+pkmnSet.belongsTo(TCG, {foreignKey: "tcgId", as: 'tcg'})
 
-pkmnSet.hasMany(pkmnCard, {foreignKey: "setId"})
-pkmnCard.belongsTo(pkmnSet, {foreignKey: "setId"})
+pkmnSet.hasMany(PkmnCard, { foreignKey: "setId", as: 'cards' });
+PkmnCard.belongsTo(pkmnSet, { foreignKey: "setId", as: 'set' });
