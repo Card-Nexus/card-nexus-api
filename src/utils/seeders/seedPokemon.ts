@@ -1,5 +1,5 @@
 import { sequelize } from "./../../config/database";
-import { pkmnEra, pkmnSet, PkmnCard } from "../../models/pokemonModels";
+import { pkmnEra, pkmnSet, pkmnCard } from "../../models/pokemonModels";
 import { TCG } from "../../models/tcgModels";
 import { v4 as uuidv4 } from "uuid";
 
@@ -40,12 +40,12 @@ export const seedPokemonData = async () => {
       { transaction }
     );
 
-    const card = await PkmnCard.create(
+    await pkmnCard.bulkCreate([
       {
         id: uuidv4(),
         name: "Charizard",
         slug: "charizard",
-        setId: set.id, // Reference the set's ID
+        setId: set.id,
         details: {
           hp: "120",
           type: "Fire",
@@ -73,8 +73,71 @@ export const seedPokemonData = async () => {
           cardEffect: "This Pokémon is very powerful.",
         },
       },
-      { transaction }
-    );
+      {
+        id: uuidv4(),
+        name: "Blastoise",
+        slug: "blastoise",
+        setId: set.id,
+        details: {
+          hp: "100",
+          type: "Water",
+          moves: [
+            {
+              cost: ["Water", "Water", "Water"],
+              name: "Hydro Pump",
+              damage: 120,
+            },
+          ],
+          rarity: "Rare Holo",
+          retreat: 3,
+          cardType: "Pokémon",
+          weakness: "Grass",
+          setNumber: "2/102",
+          cardEffect: "This Pokémon is very powerful.",
+          flavorText: "It crushes its foe under its heavy body.",
+          resistance: "Fire",
+          illustrated: "Ken Sugimori",
+          affiliateLinks: [
+            {
+              url: "https://example.com/blastoise",
+              site: "TCGPlayer",
+            },
+          ],
+        },
+      },
+      {
+        id: uuidv4(),
+        name: "Venusaur",
+        slug: "venusaur",
+        setId: set.id,
+        details: {
+          hp: "120",
+          type: "Grass",
+          moves: [
+            {
+              cost: ["Grass", "Grass", "Grass"],
+              name: "Solar Beam",
+              damage: 120,
+            },
+          ],
+          rarity: "Rare Holo",
+          retreat: 4,
+          cardType: "Pokémon",
+          weakness: "Fire",
+          setNumber: "3/102",
+          cardEffect: "This Pokémon is very powerful.",
+          flavorText: "Its plant blooms when it absorbs solar energy.",
+          resistance: "Water",
+          illustrated: "Ken Sugimori",
+          affiliateLinks: [
+            {
+              url: "https://example.com/venusaur",
+              site: "TCGPlayer",
+            },
+          ],
+        },
+      },
+    ], {transaction});
 
     await transaction.commit();
   } catch (error) {

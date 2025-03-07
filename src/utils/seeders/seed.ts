@@ -1,7 +1,7 @@
 import { sequelize } from "./../../config/database";
 import { seedPokemonData } from "./seedPokemon";
 
-const seedDatabase = async () => {
+export const seedDatabase = async () => {
     try {
         await sequelize.sync({force: true})
         await seedPokemonData();

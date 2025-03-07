@@ -1,6 +1,7 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import {TCG} from '../models/tcgModels'
 import { Op } from "sequelize";
+import { isUUID } from "validator";
 
 interface TCGParams {
     identifier: string;
@@ -19,10 +20,11 @@ export const getTCGByIdentifier = async (request: FastifyRequest<{ Params: TCGPa
     const { identifier } = request.params;
   
     try {
+      const whereClause: any = isUUID(identifier, 4)
+            ? { id: identifier }
+            : { slug: identifier };
       const tcg = await TCG.findOne({
-        where: {
-          [Op.or]: [{ id: identifier }, { slug: identifier }], // Search by id or slug
-        },
+        where: whereClause,
       });
   
       if (tcg) {

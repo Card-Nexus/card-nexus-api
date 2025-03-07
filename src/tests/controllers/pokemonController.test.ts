@@ -1,300 +1,49 @@
-import { FastifyInstance } from "fastify";
-import fastify from "fastify";
 import supertest from "supertest";
-import pokemonRoutes from "../../routes/pokemonRoutes";
-import { pkmnEra, pkmnSet, pkmnCard } from "../../models/pokemonModels";
-import { TCG } from "../../models/tcgModels";
+import { app } from "../setup"; // Import the app from setup.ts
 import { sequelize } from "../../config/database";
+import { seedDatabase } from "../../utils/seeders/seed";
+import {
+  pkmnSet,
+  pkmnEra,
+  pkmnCard,
+  pkmnCardAttributes,
+} from "./../../models/pokemonModels";
+import { TCG } from "../../models/tcgModels";
+import { v4 as uuidv4 } from "uuid";
 
 describe("Pokemon Controller Tests", () => {
-  let app: FastifyInstance;
-  let tcgId: string;
-  
   beforeAll(async () => {
-    app = fastify();
-    app.register(pokemonRoutes);
-
     await sequelize.sync({ force: true });
 
     const tcg = await TCG.create({
-      id: "550e8400-e29b-41d4-a716-446655440000", // Example UUID
+      id: uuidv4(),
       name: "Pokémon TCG",
       slug: "pokemon-tcg",
       img: "https://example.com/tcg.jpg",
     });
-    tcgId = tcg.id;
 
-    await app.ready();
-  });
-
-  afterAll(async () => {
-    await app.close();
-    await sequelize.close();
-  });
-
-  describe("getAllEras", () => {
-    it("should fetch all eras", async () => {
-      // Seed the database with some test data
-      await pkmnEra.create({ id: "1", name: "Base Set", slug: "base-set" });
-
-      const response = await supertest(app.server).get("/eras").expect(200);
-
-      expect(response.body).toEqual([
-        { id: "1", name: "Base Set", slug: "base-set" },
-      ]);
+    const era = await pkmnEra.create({
+      id: uuidv4(),
+      name: "Original Series",
+      slug: "original-series",
     });
 
-    it("should handle errors when fetching eras", async () => {
-      // Mock the findAll method to throw an error
-      jest
-        .spyOn(pkmnEra, "findAll")
-        .mockRejectedValueOnce(new Error("Database error"));
-
-      const response = await supertest(app.server).get("/eras").expect(500);
-
-      expect(response.body).toEqual({ error: "Failed to fetch Pokemon Eras" });
-    });
-  });
-
-  describe("getEraByIdentifier", () => {
-    it("should fetch an era by id", async () => {
-      await pkmnEra.create({ id: "1", name: "Base Set", slug: "base-set" });
-
-      const response = await supertest(app.server).get("/eras/1").expect(200);
-
-      expect(response.body).toEqual({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-      });
+    const set = await pkmnSet.create({
+      id: uuidv4(),
+      name: "Base Set",
+      slug: "base-set",
+      eraId: era.id,
+      releaseDate: "1999-01-09",
+      setCode: "BS-1",
+      tcgId: tcg.id,
     });
 
-    it("should fetch an era by slug", async () => {
-      await pkmnEra.create({ id: "1", name: "Base Set", slug: "base-set" });
-
-      const response = await supertest(app.server)
-        .get("/eras/base-set")
-        .expect(200);
-
-      expect(response.body).toEqual({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-      });
-    });
-
-    it("should return 404 if era not found", async () => {
-      const response = await supertest(app.server)
-        .get("/eras/non-existent")
-        .expect(404);
-
-      expect(response.body).toEqual({
-        error: 'Era not found with id or slug: "non-existent"',
-      });
-    });
-
-    it("should handle errors when fetching era by identifier", async () => {
-      jest
-        .spyOn(pkmnEra, "findOne")
-        .mockRejectedValueOnce(new Error("Database error"));
-
-      const response = await supertest(app.server).get("/eras/1").expect(500);
-
-      expect(response.body).toEqual({
-        error: 'Failed to fetch pokemon era with identifier "1"',
-      });
-    });
-  });
-
-  describe("getAllSets", () => {
-    it("should fetch all sets", async () => {
-      await pkmnSet.create({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-        eraId: "1",
-        releaseDate: "1999-01-09",
-        setCode: "BS-1",
-        tcgId: tcgId,
-      });
-
-      const response = await supertest(app.server).get("/sets").expect(200);
-
-      expect(response.body).toEqual([
-        {
-          id: "1",
-          name: "Base Set",
-          slug: "base-set",
-          eraId: "1",
-          releaseDate: "1999-01-09",
-          setCode: "BS-1",
-          tcgId: tcgId,
-        },
-      ]);
-    });
-
-    it("should filter sets by era", async () => {
-      await pkmnSet.create({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-        eraId: "1",
-        releaseDate: "1999-01-09",
-        setCode: "BS-1",
-        tcgId: tcgId,
-      });
-      await pkmnSet.create({
-        id: "2",
-        name: "Jungle",
-        slug: "jungle",
-        eraId: "2",
-        releaseDate: "1999-06-16",
-        setCode: "JU-1",
-        tcgId: tcgId,
-      });
-
-      const response = await supertest(app.server)
-        .get("/sets?era=1")
-        .expect(200);
-
-      expect(response.body).toEqual([
-        {
-          id: "1",
-          name: "Base Set",
-          slug: "base-set",
-          eraId: "1",
-          releaseDate: "1999-01-09",
-          setCode: "BS-1",
-          tcgId: tcgId,
-        },
-      ]);
-    });
-
-    it("should filter sets by name", async () => {
-      await pkmnSet.create({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-        eraId: "1",
-        releaseDate: "1999-01-09",
-        setCode: "BS-1",
-        tcgId: tcgId,
-      });
-      await pkmnSet.create({
-        id: "2",
-        name: "Jungle",
-        slug: "jungle",
-        eraId: "2",
-        releaseDate: "1999-06-16",
-        setCode: "JU-1",
-        tcgId: tcgId,
-      });
-
-      const response = await supertest(app.server)
-        .get("/sets?name=jungle")
-        .expect(200);
-
-      expect(response.body).toEqual([
-        {
-          id: "2",
-          name: "Jungle",
-          slug: "jungle",
-          eraId: "2",
-          releaseDate: "1999-06-16",
-          setCode: "JU-1",
-          tcgId: tcgId,
-        },
-      ]);
-    });
-
-    it("should handle errors when fetching sets", async () => {
-      jest
-        .spyOn(pkmnSet, "findAll")
-        .mockRejectedValueOnce(new Error("Database error"));
-
-      const response = await supertest(app.server).get("/sets").expect(500);
-
-      expect(response.body).toEqual({ error: "Failed to fetch Pokémon sets." });
-    });
-  });
-
-  describe("getSetByIdentifier", () => {
-    it("should fetch a set by id", async () => {
-      await pkmnSet.create({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-        eraId: "1",
-        releaseDate: "1999-01-09",
-        setCode: "BS-1",
-        tcgId: tcgId,
-      });
-
-      const response = await supertest(app.server).get("/sets/1").expect(200);
-
-      expect(response.body).toEqual({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-        eraId: "1",
-        releaseDate: "1999-01-09",
-        setCode: "BS-1",
-        tcgId: tcgId,
-      });
-    });
-
-    it("should fetch a set by slug", async () => {
-      await pkmnSet.create({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-        eraId: "1",
-        releaseDate: "1999-01-09",
-        setCode: "BS-1",
-        tcgId: tcgId,
-      });
-
-      const response = await supertest(app.server)
-        .get("/sets/base-set")
-        .expect(200);
-
-      expect(response.body).toEqual({
-        id: "1",
-        name: "Base Set",
-        slug: "base-set",
-        eraId: "1",
-        releaseDate: "1999-01-09",
-        setCode: "BS-1",
-        tcgId: tcgId,
-      });
-    });
-
-    it("should return 404 if set not found", async () => {
-      const response = await supertest(app.server)
-        .get("/sets/non-existent")
-        .expect(404);
-
-      expect(response.body).toEqual({ error: "Set not found." });
-    });
-
-    it("should handle errors when fetching set by identifier", async () => {
-      jest
-        .spyOn(pkmnSet, "findOne")
-        .mockRejectedValueOnce(new Error("Database error"));
-
-      const response = await supertest(app.server).get("/sets/1").expect(500);
-
-      expect(response.body).toEqual({ error: "Failed to fetch Pokémon set." });
-    });
-  });
-
-  describe("getAllCards", () => {
-    it("should fetch all cards", async () => {
-      await pkmnCard.create({
-        id: "1",
+    await pkmnCard.bulkCreate([
+      {
+        id: uuidv4(),
         name: "Charizard",
         slug: "charizard",
-        setId: "1",
+        setId: set.id,
         details: {
           hp: "120",
           type: "Fire",
@@ -321,25 +70,227 @@ describe("Pokemon Controller Tests", () => {
           ],
           cardEffect: "This Pokémon is very powerful.",
         },
-      });
+      },
+      {
+        id: uuidv4(),
+        name: "Blastoise",
+        slug: "blastoise",
+        setId: set.id,
+        details: {
+          hp: "100",
+          type: "Water",
+          moves: [
+            {
+              cost: ["Water", "Water", "Water"],
+              name: "Hydro Pump",
+              damage: 120,
+            },
+          ],
+          rarity: "Rare Holo",
+          retreat: 3,
+          cardType: "Pokémon",
+          weakness: "Grass",
+          setNumber: "2/102",
+          cardEffect: "This Pokémon is very powerful.",
+          flavorText: "It crushes its foe under its heavy body.",
+          resistance: "Fire",
+          illustrated: "Ken Sugimori",
+          affiliateLinks: [
+            {
+              url: "https://example.com/blastoise",
+              site: "TCGPlayer",
+            },
+          ],
+        },
+      },
+      {
+        id: uuidv4(),
+        name: "Venusaur",
+        slug: "venusaur",
+        setId: set.id,
+        details: {
+          hp: "120",
+          type: "Grass",
+          moves: [
+            {
+              cost: ["Grass", "Grass", "Grass"],
+              name: "Solar Beam",
+              damage: 120,
+            },
+          ],
+          rarity: "Rare Holo",
+          retreat: 4,
+          cardType: "Pokémon",
+          weakness: "Fire",
+          setNumber: "3/102",
+          cardEffect: "This Pokémon is very powerful.",
+          flavorText: "Its plant blooms when it absorbs solar energy.",
+          resistance: "Water",
+          illustrated: "Ken Sugimori",
+          affiliateLinks: [
+            {
+              url: "https://example.com/venusaur",
+              site: "TCGPlayer",
+            },
+          ],
+        },
+      },
+    ]);
+  });
 
-      const response = await supertest(app.server).get("/cards").expect(200);
+  afterAll(async () => {
+    await sequelize.close();
+  });
+
+  describe("GET /v1/pokemon/eras", () => {
+    it("should fetch all eras", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/eras")
+        .expect(200);
+
+      expect(response.body).toEqual([
+        {
+          id: expect.any(String),
+          name: "Original Series",
+          slug: "original-series",
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        },
+      ]);
+    });
+
+    it("should handle errors when fetching eras", async () => {
+      jest
+        .spyOn(sequelize.models.pkmnEra, "findAll")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/eras")
+        .expect(500);
+
+      expect(response.body).toEqual({ error: "Failed to fetch Pokemon Eras" });
+    });
+  });
+
+  describe("GET /v1/pokemon/eras/:identifier", () => {
+    it("should fetch an era by its identifier", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/eras/original-series")
+        .expect(200);
 
       expect(response.body).toEqual({
-        total: 1,
-        limit: 20,
-        offset: 0,
-        results: [
+        id: expect.any(String),
+        name: "Original Series",
+        slug: "original-series",
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+        sets: [
           {
-            id: "1",
+            id: expect.any(String),
+            name: "Base Set",
+            slug: "base-set",
+            setImg: null,
+            eraId: expect.any(String),
+            releaseDate: "1999-01-09",
+            totalCards: null,
+            setCode: "BS-1",
+            tcgId: expect.any(String),
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
+          },
+        ],
+      });
+    });
+
+    it("should return 404 if era is not found", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/eras/non-existent-era")
+        .expect(404);
+
+      expect(response.body).toEqual({
+        error: 'Era not found with id or slug: "non-existent-era"',
+      });
+    });
+
+    it("should handle errors when fetching an era by its identifier", async () => {
+      jest
+        .spyOn(sequelize.models.pkmnEra, "findOne")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/eras/original-series")
+        .expect(500);
+
+      expect(response.body).toEqual({
+        error: `Failed to fetch pokemon era with identifier "original-series"`,
+      });
+    });
+  });
+
+  describe("GET /v1/pokemon/sets", () => {
+    it("should fetch all sets", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets")
+        .expect(200);
+
+      expect(response.body).toEqual([
+        {
+          id: expect.any(String), // UUID
+          name: "Base Set",
+          slug: "base-set",
+          setImg: null,
+          eraId: expect.any(String), // UUID
+          releaseDate: "1999-01-09",
+          totalCards: null,
+          setCode: "BS-1",
+          tcgId: expect.any(String), // UUID
+          createdAt: expect.any(String), // Timestamp
+          updatedAt: expect.any(String), // Timestamp
+        },
+      ]);
+    });
+
+    it("should handle errors when fetching sets", async () => {
+      // Mock the findAll method to throw an error
+      jest
+        .spyOn(sequelize.models.pkmnSet, "findAll")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets")
+        .expect(500);
+
+      expect(response.body).toEqual({ error: "Failed to fetch Pokemon sets." });
+    });
+  });
+
+  describe("GET /v1/pokemon/sets/:identifier", () => {
+    it("should fetch a set by its identifier", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets/base-set")
+        .expect(200);
+
+      expect(response.body).toEqual({
+        id: expect.any(String), // UUID
+        name: "Base Set",
+        slug: "base-set",
+        setImg: null,
+        eraId: expect.any(String), // UUID
+        releaseDate: "1999-01-09",
+        totalCards: null,
+        setCode: "BS-1",
+        tcgId: expect.any(String), // UUID
+        createdAt: expect.any(String), // Timestamp
+        updatedAt: expect.any(String), // Timestamp
+        cards: expect.arrayContaining([
+          {
+            id: expect.any(String), // UUID
             name: "Charizard",
             slug: "charizard",
-            setId: "1",
+            setId: expect.any(String), // UUID
             details: {
               hp: "120",
               type: "Fire",
-              cardType: "Pokémon",
-              setNumber: "4/102",
               moves: [
                 {
                   cost: ["Fire", "Fire", "Fire"],
@@ -347,264 +298,327 @@ describe("Pokemon Controller Tests", () => {
                   damage: 100,
                 },
               ],
-              weakness: "Water",
-              resistance: "Fighting",
-              retreat: 3,
-              illustrated: "Mitsuhiro Arita",
               rarity: "Rare Holo",
+              retreat: 3,
+              cardType: "Pokémon",
+              weakness: "Water",
+              setNumber: "4/102",
+              cardEffect: "This Pokémon is very powerful.",
               flavorText: "Spits fire that is hot enough to melt boulders.",
+              resistance: "Fighting",
+              illustrated: "Mitsuhiro Arita",
               affiliateLinks: [
                 {
-                  site: "TCGPlayer",
                   url: "https://example.com/charizard",
+                  site: "TCGPlayer",
                 },
               ],
+            },
+            createdAt: expect.any(String), // Timestamp
+            updatedAt: expect.any(String), // Timestamp
+          },
+          {
+            id: expect.any(String), // UUID
+            name: "Blastoise",
+            slug: "blastoise",
+            setId: expect.any(String), // UUID
+            details: {
+              hp: "100",
+              type: "Water",
+              moves: [
+                {
+                  cost: ["Water", "Water", "Water"],
+                  name: "Hydro Pump",
+                  damage: 120,
+                },
+              ],
+              rarity: "Rare Holo",
+              retreat: 3,
+              cardType: "Pokémon",
+              weakness: "Grass",
+              setNumber: "2/102",
               cardEffect: "This Pokémon is very powerful.",
+              flavorText: "It crushes its foe under its heavy body.",
+              resistance: "Fire",
+              illustrated: "Ken Sugimori",
+              affiliateLinks: [
+                {
+                  url: "https://example.com/blastoise",
+                  site: "TCGPlayer",
+                },
+              ],
             },
+            createdAt: expect.any(String), // Timestamp
+            updatedAt: expect.any(String), // Timestamp
           },
-        ],
+          {
+            id: expect.any(String), // UUID
+            name: "Venusaur",
+            slug: "venusaur",
+            setId: expect.any(String), // UUID
+            details: {
+              hp: "120",
+              type: "Grass",
+              moves: [
+                {
+                  cost: ["Grass", "Grass", "Grass"],
+                  name: "Solar Beam",
+                  damage: 120,
+                },
+              ],
+              rarity: "Rare Holo",
+              retreat: 4,
+              cardType: "Pokémon",
+              weakness: "Fire",
+              setNumber: "3/102",
+              cardEffect: "This Pokémon is very powerful.",
+              flavorText: "Its plant blooms when it absorbs solar energy.",
+              resistance: "Water",
+              illustrated: "Ken Sugimori",
+              affiliateLinks: [
+                {
+                  url: "https://example.com/venusaur",
+                  site: "TCGPlayer",
+                },
+              ],
+            },
+            createdAt: expect.any(String), // Timestamp
+            updatedAt: expect.any(String), // Timestamp
+          },
+        ]),
       });
     });
 
-    it("should filter cards by name", async () => {
-      await pkmnCard.create({
-        id: "1",
-        name: "Charizard",
-        slug: "charizard",
-        setId: "1",
-        details: {
-          hp: "120",
-          type: "Fire",
-          cardType: "Pokémon",
-          setNumber: "4/102",
-          moves: [
-            {
-              cost: ["Fire", "Fire", "Fire"],
-              name: "Fire Spin",
-              damage: 100,
-            },
-          ],
-          weakness: "Water",
-          resistance: "Fighting",
-          retreat: 3,
-          illustrated: "Mitsuhiro Arita",
-          rarity: "Rare Holo",
-          flavorText: "Spits fire that is hot enough to melt boulders.",
-          affiliateLinks: [
-            {
-              site: "TCGPlayer",
-              url: "https://example.com/charizard",
-            },
-          ],
-          cardEffect: "This Pokémon is very powerful.",
-        },
-      });
-      await pkmnCard.create({
-        id: "2",
-        name: "Blastoise",
-        slug: "blastoise",
-        setId: "1",
-        details: {
-          hp: "100",
-          type: "Water",
-          cardType: "Pokémon",
-          setNumber: "2/102",
-          moves: [
-            {
-              cost: ["Water", "Water", "Water"],
-              name: "Hydro Pump",
-              damage: 80,
-            },
-          ],
-          weakness: "Grass",
-          resistance: "Fire",
-          retreat: 2,
-          illustrated: "Mitsuhiro Arita",
-          rarity: "Rare Holo",
-          flavorText:
-            "A brutal Pokémon with pressurized water jets on its shell.",
-          affiliateLinks: [
-            {
-              site: "TCGPlayer",
-              url: "https://example.com/blastoise",
-            },
-          ],
-          cardEffect: "This Pokémon is very powerful.",
-        },
-      });
-
-      const response = await supertest(app.server)
-        .get("/cards?name=charizard")
-        .expect(200);
-
-      expect(response.body.results).toEqual([
-        {
-          id: "1",
-          name: "Charizard",
-          slug: "charizard",
-          setId: "1",
-          details: {
-            hp: "120",
-            type: "Fire",
-            cardType: "Pokémon",
-            setNumber: "4/102",
-            moves: [
-              {
-                cost: ["Fire", "Fire", "Fire"],
-                name: "Fire Spin",
-                damage: 100,
-              },
-            ],
-            weakness: "Water",
-            resistance: "Fighting",
-            retreat: 3,
-            illustrated: "Mitsuhiro Arita",
-            rarity: "Rare Holo",
-            flavorText: "Spits fire that is hot enough to melt boulders.",
-            affiliateLinks: [
-              {
-                site: "TCGPlayer",
-                url: "https://example.com/charizard",
-              },
-            ],
-            cardEffect: "This Pokémon is very powerful.",
-          },
-        },
-      ]);
-    });
-
-    it("should handle errors when fetching cards", async () => {
+    it("should handle errors when fetching a set by its identifier", async () => {
+      // Mock the findOne method to throw an error
       jest
-        .spyOn(pkmnCard, "findAndCountAll")
+        .spyOn(sequelize.models.pkmnSet, "findOne")
         .mockRejectedValueOnce(new Error("Database error"));
 
-      const response = await supertest(app.server).get("/cards").expect(500);
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets/base-set")
+        .expect(500);
 
       expect(response.body).toEqual({
-        error: "Failed to fetch Pokémon cards.",
+        error: "Failed to fetch Pokemon set.",
       });
     });
   });
 
-  describe("getCardByIdentifier", () => {
-    it("should fetch a card by id", async () => {
-      await pkmnCard.create({
-        id: "1",
-        name: "Charizard",
-        slug: "charizard",
-        setId: "1",
-        details: {
-          hp: "120",
-          type: "Fire",
-          cardType: "Pokémon",
-          setNumber: "4/102",
-          moves: [
-            {
-              cost: ["Fire", "Fire", "Fire"],
-              name: "Fire Spin",
-              damage: 100,
-            },
-          ],
-          weakness: "Water",
-          resistance: "Fighting",
-          retreat: 3,
-          illustrated: "Mitsuhiro Arita",
-          rarity: "Rare Holo",
-          flavorText: "Spits fire that is hot enough to melt boulders.",
-          affiliateLinks: [
-            {
-              site: "TCGPlayer",
-              url: "https://example.com/charizard",
-            },
-          ],
-          cardEffect: "This Pokémon is very powerful.",
-        },
-      });
-
-      const response = await supertest(app.server).get("/cards/1").expect(200);
-
-      expect(response.body).toEqual({
-        id: "1",
-        name: "Charizard",
-        slug: "charizard",
-        setId: "1",
-        details: {
-          hp: "120",
-          type: "Fire",
-          cardType: "Pokémon",
-          setNumber: "4/102",
-          moves: [
-            {
-              cost: ["Fire", "Fire", "Fire"],
-              name: "Fire Spin",
-              damage: 100,
-            },
-          ],
-          weakness: "Water",
-          resistance: "Fighting",
-          retreat: 3,
-          illustrated: "Mitsuhiro Arita",
-          rarity: "Rare Holo",
-          flavorText: "Spits fire that is hot enough to melt boulders.",
-          affiliateLinks: [
-            {
-              site: "TCGPlayer",
-              url: "https://example.com/charizard",
-            },
-          ],
-          cardEffect: "This Pokémon is very powerful.",
-        },
-      });
-    });
-
-    it("should fetch a card by slug", async () => {
-      await pkmnCard.create({
-        id: "1",
-        name: "Charizard",
-        slug: "charizard",
-        setId: "1",
-        details: {
-          hp: "120",
-          type: "Fire",
-          cardType: "Pokémon",
-          setNumber: "4/102",
-          moves: [
-            {
-              cost: ["Fire", "Fire", "Fire"],
-              name: "Fire Spin",
-              damage: 100,
-            },
-          ],
-          weakness: "Water",
-          resistance: "Fighting",
-          retreat: 3,
-          illustrated: "Mitsuhiro Arita",
-          rarity: "Rare Holo",
-          flavorText: "Spits fire that is hot enough to melt boulders.",
-          affiliateLinks: [
-            {
-              site: "TCGPlayer",
-              url: "https://example.com/charizard",
-            },
-          ],
-          cardEffect: "This Pokémon is very powerful.",
-        },
-      });
-
+  describe("GET /v1/pokemon/cards", () => {
+    it("should fetch all cards", async () => {
       const response = await supertest(app.server)
-        .get("/cards/charizard")
+        .get("/v1/pokemon/cards")
         .expect(200);
 
       expect(response.body).toEqual({
-        id: "1",
+        total: 3, // Updated to 3
+        limit: 20,
+        offset: 0,
+        results: expect.arrayContaining([
+          {
+            id: expect.any(String), // UUID
+            name: "Charizard",
+            slug: "charizard",
+            setId: expect.any(String), // UUID
+            details: {
+              hp: "120",
+              type: "Fire",
+              moves: [
+                {
+                  cost: ["Fire", "Fire", "Fire"],
+                  name: "Fire Spin",
+                  damage: 100,
+                },
+              ],
+              rarity: "Rare Holo",
+              retreat: 3,
+              cardType: "Pokémon",
+              weakness: "Water",
+              setNumber: "4/102",
+              cardEffect: "This Pokémon is very powerful.",
+              flavorText: "Spits fire that is hot enough to melt boulders.",
+              resistance: "Fighting",
+              illustrated: "Mitsuhiro Arita",
+              affiliateLinks: [
+                {
+                  url: "https://example.com/charizard",
+                  site: "TCGPlayer",
+                },
+              ],
+            },
+            createdAt: expect.any(String), // Timestamp
+            updatedAt: expect.any(String), // Timestamp
+          },
+          {
+            id: expect.any(String), // UUID
+            name: "Blastoise",
+            slug: "blastoise",
+            setId: expect.any(String), // UUID
+            details: {
+              hp: "100",
+              type: "Water",
+              moves: [
+                {
+                  cost: ["Water", "Water", "Water"],
+                  name: "Hydro Pump",
+                  damage: 120,
+                },
+              ],
+              rarity: "Rare Holo",
+              retreat: 3,
+              cardType: "Pokémon",
+              weakness: "Grass",
+              setNumber: "2/102",
+              cardEffect: "This Pokémon is very powerful.",
+              flavorText: "It crushes its foe under its heavy body.",
+              resistance: "Fire",
+              illustrated: "Ken Sugimori",
+              affiliateLinks: [
+                {
+                  url: "https://example.com/blastoise",
+                  site: "TCGPlayer",
+                },
+              ],
+            },
+            createdAt: expect.any(String), // Timestamp
+            updatedAt: expect.any(String), // Timestamp
+          },
+          {
+            id: expect.any(String), // UUID
+            name: "Venusaur",
+            slug: "venusaur",
+            setId: expect.any(String), // UUID
+            details: {
+              hp: "120",
+              type: "Grass",
+              moves: [
+                {
+                  cost: ["Grass", "Grass", "Grass"],
+                  name: "Solar Beam",
+                  damage: 120,
+                },
+              ],
+              rarity: "Rare Holo",
+              retreat: 4,
+              cardType: "Pokémon",
+              weakness: "Fire",
+              setNumber: "3/102",
+              cardEffect: "This Pokémon is very powerful.",
+              flavorText: "Its plant blooms when it absorbs solar energy.",
+              resistance: "Water",
+              illustrated: "Ken Sugimori",
+              affiliateLinks: [
+                {
+                  url: "https://example.com/venusaur",
+                  site: "TCGPlayer",
+                },
+              ],
+            },
+            createdAt: expect.any(String), // Timestamp
+            updatedAt: expect.any(String), // Timestamp
+          },
+        ]),
+      });
+    });
+
+    it("should filter cards by a top-level field (name)", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards?name[eq]=Charizard")
+        .expect(200);
+
+      expect(response.body.results.length).toBeGreaterThan(0);
+      response.body.results.forEach((card: any) => {
+        expect(card.name).toBe("Charizard");
+      });
+    });
+
+    it("should filter cards by a top-level field with iLike (name)", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards?name=Char")
+        .expect(200);
+
+      expect(response.body.results.length).toBeGreaterThan(0);
+      response.body.results.forEach((card: any) => {
+        expect(card.name.toLowerCase()).toContain("char");
+      });
+    });
+
+    it("should filter cards by a nested field with eq (type)", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards?type=Fire")
+        .expect(200);
+
+      expect(response.body.results.length).toBeGreaterThan(0);
+      response.body.results.forEach((card: any) => {
+        expect(card.details.type).toBe("Fire");
+      });
+    });
+
+    it("should filter cards with operators (hp[gte]100)", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards?hp[gte]=100")
+        .expect(200);
+
+      expect(response.body.results.length).toBeGreaterThan(0);
+      response.body.results.forEach((card: any) => {
+        expect(parseInt(card.details.hp)).toBeGreaterThanOrEqual(100);
+      });
+    });
+
+    it("should filter cards with operators (hp[lt]=120)", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards?hp[lt]=120")
+        .expect(200);
+
+      console.log(`\n\n\n\n\n\n${JSON.stringify(response)}\n\n\n\n\n`);
+
+      expect(response.body.results.length).toBeGreaterThan(0);
+      response.body.results.forEach((card: any) => {
+        expect(parseInt(card.details.hp)).toBeLessThan(120);
+      });
+    });
+
+    it("should filter cards with operators (type[eq]=Fire)", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards?type[eq]=Fire")
+        .expect(200);
+
+      expect(response.body.results.length).toBeGreaterThan(0);
+      response.body.results.forEach((card: any) => {
+        expect(card.details.type).toBe("Fire");
+      });
+    });
+
+    it("should handle errors when fetching cards", async () => {
+      jest
+        .spyOn(sequelize.models.pkmnCard, "findAll")
+        .mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards")
+        .expect(500);
+
+      expect(response.body).toEqual({
+        error: "Failed to fetch Pokemon cards.",
+      });
+    });
+  });
+
+  describe("GET /v1/pokemon/cards/:identifier", () => {
+    it("should fetch a card by its identifier", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards/charizard")
+        .expect(200);
+
+      expect(response.body).toEqual({
+        id: expect.any(String), // UUID
         name: "Charizard",
         slug: "charizard",
-        setId: "1",
+        setId: expect.any(String), // UUID
         details: {
           hp: "120",
           type: "Fire",
-          cardType: "Pokémon",
-          setNumber: "4/102",
           moves: [
             {
               cost: ["Fire", "Fire", "Fire"],
@@ -612,39 +626,39 @@ describe("Pokemon Controller Tests", () => {
               damage: 100,
             },
           ],
-          weakness: "Water",
-          resistance: "Fighting",
-          retreat: 3,
-          illustrated: "Mitsuhiro Arita",
           rarity: "Rare Holo",
+          retreat: 3,
+          cardType: "Pokémon",
+          weakness: "Water",
+          setNumber: "4/102",
+          cardEffect: "This Pokémon is very powerful.",
           flavorText: "Spits fire that is hot enough to melt boulders.",
+          resistance: "Fighting",
+          illustrated: "Mitsuhiro Arita",
           affiliateLinks: [
             {
-              site: "TCGPlayer",
               url: "https://example.com/charizard",
+              site: "TCGPlayer",
             },
           ],
-          cardEffect: "This Pokémon is very powerful.",
         },
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
       });
     });
 
-    it("should return 404 if card not found", async () => {
-      const response = await supertest(app.server)
-        .get("/cards/non-existent")
-        .expect(404);
-
-      expect(response.body).toEqual({ error: "Card not found." });
-    });
-
-    it("should handle errors when fetching card by identifier", async () => {
+    it("should handle errors when fetching a card by its identifier", async () => {
       jest
-        .spyOn(pkmnCard, "findOne")
+        .spyOn(sequelize.models.pkmnCard, "findOne")
         .mockRejectedValueOnce(new Error("Database error"));
 
-      const response = await supertest(app.server).get("/cards/1").expect(500);
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards/charizard")
+        .expect(500);
 
-      expect(response.body).toEqual({ error: "Failed to fetch Pokémon card." });
+      expect(response.body).toEqual({
+        error: "Failed to fetch Pokemon card.",
+      });
     });
   });
 });

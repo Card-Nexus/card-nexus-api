@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { Op } from "sequelize";
-import { pkmnEra, pkmnSet, PkmnCard } from "./../models/pokemonModels";
+import { pkmnEra, pkmnSet, pkmnCard } from "./../models/pokemonModels";
 import { TCG } from "./../models/tcgModels";
 import { isUUID } from "validator";
 
@@ -66,7 +66,7 @@ export const getAllSets = async (
     });
     return reply.send(sets);
   } catch (error) {
-    return reply.status(500).send({ error: "Failed to fetch Pokémon sets." });
+    return reply.status(500).send({ error: "Failed to fetch Pokemon sets." });
   }
 };
 
@@ -83,7 +83,7 @@ export const getSetByIdentifier = async (
       : { slug: identifier };
 
     const set = await pkmnSet.findOne({
-      include: [{ model: PkmnCard, as: "cards" }],
+      include: [{ model: pkmnCard, as: "cards" }],
       where: whereClause,
       logging: console.log,
     });
@@ -91,7 +91,7 @@ export const getSetByIdentifier = async (
     if (!set) return reply.status(404).send({ error: "Set not found." });
     return reply.send(set);
   } catch (error) {
-    return reply.status(500).send({ error: "Failed to fetch Pokémon set." });
+    return reply.status(500).send({ error: "Failed to fetch Pokemon set." });
   }
 };
 
@@ -105,27 +105,34 @@ export const getAllCards = async (
     const whereClause: any = {};
 
     const topLevelFields = ["id", "name", "slug", "setId"];
-
     Object.entries(filters).forEach(([key, value]) => {
-      const match = key.match(/^(.*?)\s*(>=|<=|>|<|=)$/);
+      const match = key.match(
+        /(.*?)__(gte|lte|gt|lt|eq)$|(.+?)\[(gte|lte|gt|lt|eq)\]$/
+      );
       if (match) {
-        const field = match[1];
-        const operator = match[2];
-        const sequelizeOperators: Record<string, symbol> = {
-          ">=": Op.gte,
-          "<=": Op.lte,
-          ">": Op.gt,
-          "<": Op.lt,
-          "=": Op.eq,
-        };
+        const field = match[1] || match[3]; 
+        const operator = match[2] || match[4]; 
 
+        const sequelizeOperators: Record<string, symbol> = {
+          gte: Op.gte,
+          lte: Op.lte,
+          gt: Op.gt,
+          lt: Op.lt,
+          eq: Op.eq,
+        };
+        console.log(
+          `\n\n\n\nMATCH:${match}\nFIELD:${field}\nOPERATOR:${operator}\n`
+        );
         if (sequelizeOperators[operator]) {
+          const numericValue = field === "hp" ? parseFloat(value) : value;
           if (topLevelFields.includes(field)) {
-            whereClause[field] = { [sequelizeOperators[operator]]: value };
+            whereClause[field] = {
+              [sequelizeOperators[operator]]: numericValue,
+            };
           } else {
             whereClause.details = {
               ...whereClause.details,
-              [field]: { [sequelizeOperators[operator]]: value },
+              [field]: { [sequelizeOperators[operator]]: numericValue },
             };
           }
         }
@@ -145,7 +152,7 @@ export const getAllCards = async (
     const limitNum = limit ? Math.max(1, Number(limit)) : 20; // Default: 20 per page
     const offsetNum = offset ? Math.max(0, Number(offset)) : 0;
 
-    const { rows: cards, count } = await PkmnCard.findAndCountAll({
+    const { rows: cards, count } = await pkmnCard.findAndCountAll({
       where: whereClause,
       limit: limitNum,
       offset: offsetNum,
@@ -159,7 +166,7 @@ export const getAllCards = async (
     });
   } catch (error) {
     console.error(error);
-    return reply.status(500).send({ error: "Failed to fetch Pokémon cards." });
+    return reply.status(500).send({ error: "Failed to fetch Pokemon cards." });
   }
 };
 
@@ -175,13 +182,13 @@ export const getCardByIdentifier = async (
       ? { id: identifier }
       : { slug: identifier };
 
-    const card = await PkmnCard.findOne({
+    const card = await pkmnCard.findOne({
       where: whereClause,
     });
 
     if (!card) return reply.status(404).send({ error: "Card not found." });
     return reply.send(card);
   } catch (error) {
-    return reply.status(500).send({ error: "Failed to fetch Pokémon card." });
+    return reply.status(500).send({ error: "Failed to fetch Pokemon card." });
   }
 };
