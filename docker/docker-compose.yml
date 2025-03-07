@@ -14,7 +14,7 @@ services:
 
   test_db:
     image: postgis/postgis:15-3.3
-    container_name: test_db
+    container_name: card_nexus_test_db
     environment:
       POSTGRES_USER: test_user
       POSTGRES_PASSWORD: test_password
