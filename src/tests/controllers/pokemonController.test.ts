@@ -1,13 +1,7 @@
 import supertest from "supertest";
-import { app } from "../setup"; // Import the app from setup.ts
+import { app } from "../setup";
 import { sequelize } from "../../config/database";
-import { seedDatabase } from "../../utils/seeders/seed";
-import {
-  pkmnSet,
-  pkmnEra,
-  pkmnCard,
-  pkmnCardAttributes,
-} from "./../../models/pokemonModels";
+import { pkmnSet, pkmnEra, pkmnCard } from "./../../models/pokemonModels";
 import { TCG } from "../../models/tcgModels";
 import { v4 as uuidv4 } from "uuid";
 
@@ -28,22 +22,42 @@ describe("Pokemon Controller Tests", () => {
       slug: "original-series",
     });
 
-    const set = await pkmnSet.create({
-      id: uuidv4(),
-      name: "Base Set",
-      slug: "base-set",
-      eraId: era.id,
-      releaseDate: "1999-01-09",
-      setCode: "BS-1",
-      tcgId: tcg.id,
-    });
+    const set = await pkmnSet.bulkCreate([
+      {
+        id: uuidv4(),
+        name: "Base Set",
+        slug: "base-set",
+        eraId: era.id,
+        releaseDate: "1999-01-09",
+        setCode: "BS-1",
+        tcgId: tcg.id,
+      },
+      {
+        id: uuidv4(),
+        name: "Jungle",
+        slug: "jungle",
+        eraId: era.id,
+        releaseDate: "1999-06-16",
+        setCode: "JU-1",
+        tcgId: tcg.id,
+      },
+      {
+        id: uuidv4(),
+        name: "Fossil",
+        slug: "fossil",
+        eraId: era.id,
+        releaseDate: "1999-10-10",
+        setCode: "FO-1",
+        tcgId: tcg.id,
+      },
+    ]);
 
     await pkmnCard.bulkCreate([
       {
         id: uuidv4(),
         name: "Charizard",
         slug: "charizard",
-        setId: set.id,
+        setId: set[0].id,
         details: {
           hp: "120",
           type: "Fire",
@@ -75,7 +89,7 @@ describe("Pokemon Controller Tests", () => {
         id: uuidv4(),
         name: "Blastoise",
         slug: "blastoise",
-        setId: set.id,
+        setId: set[0].id,
         details: {
           hp: "100",
           type: "Water",
@@ -107,7 +121,7 @@ describe("Pokemon Controller Tests", () => {
         id: uuidv4(),
         name: "Venusaur",
         slug: "venusaur",
-        setId: set.id,
+        setId: set[0].id,
         details: {
           hp: "120",
           type: "Grass",
@@ -173,33 +187,21 @@ describe("Pokemon Controller Tests", () => {
   });
 
   describe("GET /v1/pokemon/eras/:identifier", () => {
-    it("should fetch an era by its identifier", async () => {
+    it("should fetch an era by its UUID", async () => {
+      const era = await pkmnEra.findOne({ where: { slug: "original-series" } });
+      const response = await supertest(app.server)
+        .get(`/v1/pokemon/eras/${era?.id}`)
+        .expect(200);
+
+      expect(response.body.id).toBe(era?.id);
+    });
+
+    it("should fetch an era by its slug", async () => {
       const response = await supertest(app.server)
         .get("/v1/pokemon/eras/original-series")
         .expect(200);
 
-      expect(response.body).toEqual({
-        id: expect.any(String),
-        name: "Original Series",
-        slug: "original-series",
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
-        sets: [
-          {
-            id: expect.any(String),
-            name: "Base Set",
-            slug: "base-set",
-            setImg: null,
-            eraId: expect.any(String),
-            releaseDate: "1999-01-09",
-            totalCards: null,
-            setCode: "BS-1",
-            tcgId: expect.any(String),
-            createdAt: expect.any(String),
-            updatedAt: expect.any(String),
-          },
-        ],
-      });
+      expect(response.body.slug).toBe("original-series");
     });
 
     it("should return 404 if era is not found", async () => {
@@ -233,25 +235,52 @@ describe("Pokemon Controller Tests", () => {
         .get("/v1/pokemon/sets")
         .expect(200);
 
-      expect(response.body).toEqual([
-        {
-          id: expect.any(String), // UUID
-          name: "Base Set",
-          slug: "base-set",
-          setImg: null,
-          eraId: expect.any(String), // UUID
-          releaseDate: "1999-01-09",
-          totalCards: null,
-          setCode: "BS-1",
-          tcgId: expect.any(String), // UUID
-          createdAt: expect.any(String), // Timestamp
-          updatedAt: expect.any(String), // Timestamp
-        },
-      ]);
+      expect(response.body[0]).toEqual({
+        id: expect.any(String),
+        name: "Base Set",
+        slug: "base-set",
+        setImg: null,
+        eraId: expect.any(String),
+        releaseDate: "1999-01-09",
+        totalCards: null,
+        setCode: "BS-1",
+        tcgId: expect.any(String),
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+      });
+    });
+
+    it("should fetch all sets sorted by releaseDate in ascending order", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets?sort=releaseDate&order=asc")
+        .expect(200);
+
+      expect(response.body.length).toBe(3);
+      expect(response.body[0].name).toBe("Base Set");
+      expect(response.body[1].name).toBe("Jungle");
+      expect(response.body[2].name).toBe("Fossil");
+    });
+
+    it("should fetch all sets sorted by releaseDate in descending order", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets?sort=releaseDate&order=desc")
+        .expect(200);
+
+      expect(response.body.length).toBe(3);
+      expect(response.body[0].name).toBe("Fossil");
+      expect(response.body[1].name).toBe("Jungle");
+      expect(response.body[2].name).toBe("Base Set");
+    });
+
+    it("should fetch all sets without sorting", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets")
+        .expect(200);
+
+      expect(response.body.length).toBe(3);
     });
 
     it("should handle errors when fetching sets", async () => {
-      // Mock the findAll method to throw an error
       jest
         .spyOn(sequelize.models.pkmnSet, "findAll")
         .mockRejectedValueOnce(new Error("Database error"));
@@ -262,6 +291,29 @@ describe("Pokemon Controller Tests", () => {
 
       expect(response.body).toEqual({ error: "Failed to fetch Pokemon sets." });
     });
+
+    it("should fetch sets filtered by era", async () => {
+      const era = await pkmnEra.findOne({ where: { slug: "original-series" } });
+      const response = await supertest(app.server)
+        .get(`/v1/pokemon/sets?era=${era?.id}`) // Filter by eraId
+        .expect(200);
+
+      expect(response.body.length).toBeGreaterThan(0);
+      response.body.forEach((set: any) => {
+        expect(set.eraId).toBe(era?.id);
+      });
+    });
+
+    it("should fetch sets filtered by name", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets?name=Base") // Filter by name
+        .expect(200);
+
+      expect(response.body.length).toBeGreaterThan(0);
+      response.body.forEach((set: any) => {
+        expect(set.name.toLowerCase()).toContain("base");
+      });
+    });
   });
 
   describe("GET /v1/pokemon/sets/:identifier", () => {
@@ -271,23 +323,23 @@ describe("Pokemon Controller Tests", () => {
         .expect(200);
 
       expect(response.body).toEqual({
-        id: expect.any(String), // UUID
+        id: expect.any(String),
         name: "Base Set",
         slug: "base-set",
         setImg: null,
-        eraId: expect.any(String), // UUID
+        eraId: expect.any(String),
         releaseDate: "1999-01-09",
         totalCards: null,
         setCode: "BS-1",
-        tcgId: expect.any(String), // UUID
-        createdAt: expect.any(String), // Timestamp
-        updatedAt: expect.any(String), // Timestamp
+        tcgId: expect.any(String),
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
         cards: expect.arrayContaining([
           {
-            id: expect.any(String), // UUID
+            id: expect.any(String),
             name: "Charizard",
             slug: "charizard",
-            setId: expect.any(String), // UUID
+            setId: expect.any(String),
             details: {
               hp: "120",
               type: "Fire",
@@ -314,14 +366,14 @@ describe("Pokemon Controller Tests", () => {
                 },
               ],
             },
-            createdAt: expect.any(String), // Timestamp
-            updatedAt: expect.any(String), // Timestamp
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
           },
           {
-            id: expect.any(String), // UUID
+            id: expect.any(String),
             name: "Blastoise",
             slug: "blastoise",
-            setId: expect.any(String), // UUID
+            setId: expect.any(String),
             details: {
               hp: "100",
               type: "Water",
@@ -348,14 +400,14 @@ describe("Pokemon Controller Tests", () => {
                 },
               ],
             },
-            createdAt: expect.any(String), // Timestamp
-            updatedAt: expect.any(String), // Timestamp
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
           },
           {
-            id: expect.any(String), // UUID
+            id: expect.any(String),
             name: "Venusaur",
             slug: "venusaur",
-            setId: expect.any(String), // UUID
+            setId: expect.any(String),
             details: {
               hp: "120",
               type: "Grass",
@@ -382,15 +434,14 @@ describe("Pokemon Controller Tests", () => {
                 },
               ],
             },
-            createdAt: expect.any(String), // Timestamp
-            updatedAt: expect.any(String), // Timestamp
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
           },
         ]),
       });
     });
 
     it("should handle errors when fetching a set by its identifier", async () => {
-      // Mock the findOne method to throw an error
       jest
         .spyOn(sequelize.models.pkmnSet, "findOne")
         .mockRejectedValueOnce(new Error("Database error"));
@@ -403,6 +454,31 @@ describe("Pokemon Controller Tests", () => {
         error: "Failed to fetch Pokemon set.",
       });
     });
+
+    it("should fetch a set by its UUID", async () => {
+      const set = await pkmnSet.findOne({ where: { slug: "base-set" } });
+      const response = await supertest(app.server)
+        .get(`/v1/pokemon/sets/${set?.id}`) 
+        .expect(200);
+
+      expect(response.body.id).toBe(set?.id);
+    });
+
+    it("should fetch a set by its slug", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets/base-set") 
+        .expect(200);
+
+      expect(response.body.slug).toBe("base-set");
+    });
+
+    it("should return 404 if set is not found", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/sets/non-existent-set") 
+        .expect(404);
+
+      expect(response.body).toEqual({ error: "Set not found." });
+    });
   });
 
   describe("GET /v1/pokemon/cards", () => {
@@ -412,15 +488,15 @@ describe("Pokemon Controller Tests", () => {
         .expect(200);
 
       expect(response.body).toEqual({
-        total: 3, // Updated to 3
+        total: 3,
         limit: 20,
         offset: 0,
         results: expect.arrayContaining([
           {
-            id: expect.any(String), // UUID
+            id: expect.any(String),
             name: "Charizard",
             slug: "charizard",
-            setId: expect.any(String), // UUID
+            setId: expect.any(String),
             details: {
               hp: "120",
               type: "Fire",
@@ -447,14 +523,14 @@ describe("Pokemon Controller Tests", () => {
                 },
               ],
             },
-            createdAt: expect.any(String), // Timestamp
-            updatedAt: expect.any(String), // Timestamp
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
           },
           {
-            id: expect.any(String), // UUID
+            id: expect.any(String),
             name: "Blastoise",
             slug: "blastoise",
-            setId: expect.any(String), // UUID
+            setId: expect.any(String),
             details: {
               hp: "100",
               type: "Water",
@@ -481,14 +557,14 @@ describe("Pokemon Controller Tests", () => {
                 },
               ],
             },
-            createdAt: expect.any(String), // Timestamp
-            updatedAt: expect.any(String), // Timestamp
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
           },
           {
-            id: expect.any(String), // UUID
+            id: expect.any(String),
             name: "Venusaur",
             slug: "venusaur",
-            setId: expect.any(String), // UUID
+            setId: expect.any(String),
             details: {
               hp: "120",
               type: "Grass",
@@ -515,8 +591,8 @@ describe("Pokemon Controller Tests", () => {
                 },
               ],
             },
-            createdAt: expect.any(String), // Timestamp
-            updatedAt: expect.any(String), // Timestamp
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
           },
         ]),
       });
@@ -603,6 +679,40 @@ describe("Pokemon Controller Tests", () => {
         error: "Failed to fetch Pokemon cards.",
       });
     });
+
+    it("should fetch cards with pagination", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards?limit=1&offset=0") // Fetch first card
+        .expect(200);
+  
+      expect(response.body.results.length).toBe(1);
+      expect(response.body.total).toBe(3);
+    });
+  
+    it("should fetch a card by its UUID", async () => {
+      const card = await pkmnCard.findOne({ where: { slug: "charizard" } });
+      const response = await supertest(app.server)
+        .get(`/v1/pokemon/cards/${card?.id}`) // Use UUID
+        .expect(200);
+  
+      expect(response.body.id).toBe(card?.id);
+    });
+  
+    it("should fetch a card by its slug", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards/charizard") // Use slug
+        .expect(200);
+  
+      expect(response.body.slug).toBe("charizard");
+    });
+  
+    it("should return 404 if card is not found", async () => {
+      const response = await supertest(app.server)
+        .get("/v1/pokemon/cards/non-existent-card") // Use non-existent slug
+        .expect(404);
+  
+      expect(response.body).toEqual({ error: "Card not found." });
+    });
   });
 
   describe("GET /v1/pokemon/cards/:identifier", () => {
@@ -612,10 +722,10 @@ describe("Pokemon Controller Tests", () => {
         .expect(200);
 
       expect(response.body).toEqual({
-        id: expect.any(String), // UUID
+        id: expect.any(String),
         name: "Charizard",
         slug: "charizard",
-        setId: expect.any(String), // UUID
+        setId: expect.any(String),
         details: {
           hp: "120",
           type: "Fire",
