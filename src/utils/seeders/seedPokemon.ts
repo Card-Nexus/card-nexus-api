@@ -27,7 +27,7 @@ export const seedPokemonData = async () => {
       { transaction }
     );
 
-    const set = await pkmnSet.create(
+    const set = await pkmnSet.bulkCreate([
       {
         id: uuidv4(),
         name: "Base Set",
@@ -37,15 +37,32 @@ export const seedPokemonData = async () => {
         setCode: "BS-1",
         tcgId: tcg.id,
       },
-      { transaction }
-    );
+      {
+        id: uuidv4(),
+        name: "Jungle",
+        slug: "jungle",
+        eraId: era.id,
+        releaseDate: "1999-06-16",
+        setCode: "JU-1",
+        tcgId: tcg.id,
+      },
+      {
+        id: uuidv4(),
+        name: "Fossil",
+        slug: "fossil",
+        eraId: era.id,
+        releaseDate: "1999-10-10",
+        setCode: "FO-1",
+        tcgId: tcg.id,
+      },
+    ], {transaction});
 
     await pkmnCard.bulkCreate([
       {
         id: uuidv4(),
         name: "Charizard",
         slug: "charizard",
-        setId: set.id,
+        setId: set[0].id,
         details: {
           hp: "120",
           type: "Fire",
@@ -77,7 +94,7 @@ export const seedPokemonData = async () => {
         id: uuidv4(),
         name: "Blastoise",
         slug: "blastoise",
-        setId: set.id,
+        setId: set[0].id,
         details: {
           hp: "100",
           type: "Water",
@@ -109,7 +126,7 @@ export const seedPokemonData = async () => {
         id: uuidv4(),
         name: "Venusaur",
         slug: "venusaur",
-        setId: set.id,
+        setId: set[0].id,
         details: {
           hp: "120",
           type: "Grass",

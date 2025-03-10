@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { pkmnEra, pkmnSet, pkmnCard } from "./../models/pokemonModels";
 import { TCG } from "./../models/tcgModels";
 import { isUUID } from "validator";
@@ -51,18 +51,31 @@ export const getEraByIdentifier = async (
 
 // Get all pokemon sets with optional filters
 export const getAllSets = async (
-  req: FastifyRequest<{ Querystring: { era?: string; name?: string } }>,
+  req: FastifyRequest<{
+    Querystring: {
+      era?: string;
+      name?: string;
+      sort?: string;
+      order?: "asc" | "desc";
+    };
+  }>,
   reply: FastifyReply
 ) => {
   try {
-    const { era, name } = req.query;
+    const { era, name, sort, order } = req.query;
     const whereClause: any = {};
+    const orderClause: any[] = [];
 
     if (era) whereClause.eraId = era;
     if (name) whereClause.name = { [Op.iLike]: `%${name}%` };
 
+    if (sort === "releaseDate") {
+      orderClause.push(["releaseDate", order === "desc" ? "DESC" : "ASC"]);
+    }
+
     const sets = await pkmnSet.findAll({
       where: whereClause,
+      order: orderClause.length ? orderClause : undefined,
     });
     return reply.send(sets);
   } catch (error) {
@@ -83,7 +96,18 @@ export const getSetByIdentifier = async (
       : { slug: identifier };
 
     const set = await pkmnSet.findOne({
-      include: [{ model: pkmnCard, as: "cards" }],
+      include: [
+        {
+          model: pkmnCard,
+          as: "cards",
+          order: [
+            Sequelize.literal(
+              `CAST(SPLIT_PART("setNumber", '/', 1) AS INTEGER)`
+            ),
+            "ASC",
+          ],
+        },
+      ],
       where: whereClause,
       logging: console.log,
     });
@@ -110,8 +134,8 @@ export const getAllCards = async (
         /(.*?)__(gte|lte|gt|lt|eq)$|(.+?)\[(gte|lte|gt|lt|eq)\]$/
       );
       if (match) {
-        const field = match[1] || match[3]; 
-        const operator = match[2] || match[4]; 
+        const field = match[1] || match[3];
+        const operator = match[2] || match[4];
 
         const sequelizeOperators: Record<string, symbol> = {
           gte: Op.gte,
