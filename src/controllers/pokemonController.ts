@@ -109,7 +109,6 @@ export const getSetByIdentifier = async (
         },
       ],
       where: whereClause,
-      logging: console.log,
     });
 
     if (!set) return reply.status(404).send({ error: "Set not found." });

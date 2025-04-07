@@ -3,6 +3,7 @@ import {
   pkmnEra,
   pkmnCard,
   pkmnCardAttributes,
+  PkmnCardDetails,
 } from "../../../models/pokemonModels";
 import { TCG } from "../../../models/tcgModels";
 import { sequelize } from "../../../config/database";
@@ -46,17 +47,37 @@ describe("Pokemon Card Model", () => {
   });
 
   it("should create a pkmnCard successfully", async () => {
-    const cardDetails = {
-      hp: "100",
+    const cardDetails: PkmnCardDetails = {
+      card_type: "pokemon",
+      sub_types: [],
+      hp: 100,
       type: "Fire",
-      cardType: "Basic",
-      setNumber: "001",
-      moves: [
-        { name: "Flamethrower", cost: ["Fire", "Colorless"], damage: 90 },
+      stage: "Basic",
+      abilities: [],
+      attacks: [
+        {
+          cost: [
+            { type: "Fire", amount: 1 },
+            { type: "Colorless", amount: 1 },
+          ],
+          name: "Flamethrower",
+          description: "Deals 90 damage",
+          damage: "90",
+        },
       ],
-      illustrated: "John Doe",
-      rarity: "Rare",
-      cardEffect: "Burns opponent's Pokémon",
+      weakness: { type: "Water", modifier: "×2" },
+      resistance: { type: "Grass", modifier: "-30" },
+      retreat_cost: "1",
+      flavor_text: "A fiery Pokémon",
+      special_rules: [],
+      set_info: {
+        name: "Test Set",
+        number: "001/100",
+        rarity: "Rare",
+        total_cards: "100",
+      },
+      illustrator: "John Doe",
+      github_image_url: "https://example.com/flareon.jpg",
     };
 
     const testCard = await pkmnCard.create({
@@ -71,7 +92,9 @@ describe("Pokemon Card Model", () => {
     expect(testCard.name).toBe("Flareon");
     expect(testCard.slug).toBe("flareon-001");
     expect(testCard.setId).toBe(testSet.id);
-    expect(testCard.details.hp).toBe("100");
+    expect(testCard.details.hp).toBe(100);
+    expect(testCard.details.card_type).toBe("pokemon");
+    expect(testCard.details.attacks[0].name).toBe("Flamethrower");
   });
 
   it("should not create a pkmnCard without required fields", async () => {
@@ -113,16 +136,31 @@ describe("Pokemon Card Model", () => {
       slug: "pikachu-001",
       setId: testSet.id,
       details: {
-        hp: "60",
+        card_type: "pokemon",
+        sub_types: [],
+        hp: 60,
         type: "Electric",
-        cardType: "Basic",
-        setNumber: "002",
-        moves: [
-          { name: "Thunderbolt", cost: ["Electric", "Colorless"], damage: 50 },
+        stage: "Basic",
+        abilities: [],
+        attacks: [
+          {
+            cost: [
+              { type: "Electric", amount: 1 },
+              { type: "Colorless", amount: 1 },
+            ],
+            name: "Thunderbolt",
+            description: "Deals 50 damage",
+            damage: "50",
+          },
         ],
-        illustrated: "Jane Doe",
-        rarity: "Common",
-        cardEffect: "Paralyzes opponent's Pokémon",
+        set_info: {
+          name: "Test Set",
+          number: "002/100",
+          rarity: "Common",
+          total_cards: "100",
+        },
+        illustrator: "Jane Doe",
+        github_image_url: "https://example.com/pikachu.jpg",
       },
     });
 
@@ -130,17 +168,35 @@ describe("Pokemon Card Model", () => {
   });
 
   it("should store the details field as JSONB type", async () => {
-    const cardDetails = {
-      hp: "90",
+    const cardDetails: PkmnCardDetails = {
+      card_type: "pokemon",
+      sub_types: ["ex"],
+      hp: 90,
       type: "Water",
-      cardType: "Stage 1",
-      setNumber: "003",
-      moves: [
-        { name: "Bubble Beam", cost: ["Water", "Colorless"], damage: 30 },
+      stage: "Stage 1",
+      abilities: [
+        {
+          type: "ability",
+          name: "Torrent",
+          description: "Boosts water attacks when HP is low",
+        },
       ],
-      illustrated: "Mark Lee",
-      rarity: "Uncommon",
-      cardEffect: "May cause confusion",
+      attacks: [
+        {
+          cost: [{ type: "Water", amount: 1 }],
+          name: "Bubble Beam",
+          description: "Deals 30 damage",
+          damage: "30",
+        },
+      ],
+      set_info: {
+        name: "Test Set",
+        number: "003/100",
+        rarity: "Uncommon",
+        total_cards: "100",
+      },
+      illustrator: "Mark Lee",
+      github_image_url: "https://example.com/squirtle.jpg",
     };
 
     const testCard = await pkmnCard.create({
@@ -152,5 +208,7 @@ describe("Pokemon Card Model", () => {
     });
 
     expect(testCard.details).toEqual(cardDetails);
+    expect(testCard.details.sub_types).toContain("ex");
+    expect(testCard.details.abilities[0].name).toBe("Torrent");
   });
 });

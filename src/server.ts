@@ -2,6 +2,8 @@ import { buildFastify } from "./utils/buildFastify";
 import { sequelize } from "./config/database";
 import { redis } from "./config/redis";
 import { env } from "./config/env";
+import TCG from "./models/tcgModels"
+import { pkmnSet, pkmnEra, pkmnCard } from './models/pokemonModels'
 
 const start = async () => {
   const server = buildFastify();
@@ -9,6 +11,9 @@ const start = async () => {
   try {
     await sequelize.authenticate();
     console.log("Database authenticated");
+
+    
+
     await sequelize.sync();
 
     await redis.ping();
