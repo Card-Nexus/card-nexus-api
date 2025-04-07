@@ -2,13 +2,15 @@ import { buildFastify } from "./../utils/buildFastify";
 import { sequelize } from "./../config/database";
 import { redis } from "./../config/redis"; // Import the Redis instance
 import { FastifyInstance } from "fastify";
+import {matchers} from 'jest-json-schema'
 
 let app: FastifyInstance;
+expect.extend(matchers)
 
 beforeAll(async () => {
   try {
     // Reset the database schema
-    await sequelize.sync({ force: true });
+    // await sequelize.sync({ force: true });
 
     // Build the Fastify app
     app = buildFastify();

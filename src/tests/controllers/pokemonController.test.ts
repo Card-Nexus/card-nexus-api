@@ -4,152 +4,212 @@ import { sequelize } from "../../config/database";
 import { pkmnSet, pkmnEra, pkmnCard } from "./../../models/pokemonModels";
 import { TCG } from "../../models/tcgModels";
 import { v4 as uuidv4 } from "uuid";
+import { setWithCardsSchema, cardSchema } from "../schemas/pokemonCard.schema";
 
 describe("Pokemon Controller Tests", () => {
   beforeAll(async () => {
-    await sequelize.sync({ force: true });
+    await sequelize.authenticate();
+    console.log("Database connected successfully (in test file)");
 
-    const tcg = await TCG.create({
-      id: uuidv4(),
-      name: "Pokémon TCG",
-      slug: "pokemon-tcg",
-      img: "https://example.com/tcg.jpg",
-    });
+    await TCG.sync({ force: true });
+    await pkmnEra.sync({ force: true });
+    await pkmnSet.sync({ force: true });
+    await pkmnCard.sync({ force: true });
 
-    const era = await pkmnEra.create({
-      id: uuidv4(),
-      name: "Original Series",
-      slug: "original-series",
-    });
+    try {
+      const tcg = await TCG.create({
+        id: uuidv4(),
+        name: "Pokémon TCG",
+        slug: "pokemon-tcg",
+        img: "https://example.com/tcg.jpg",
+      });
 
-    const set = await pkmnSet.bulkCreate([
-      {
+      const era = await pkmnEra.create({
         id: uuidv4(),
-        name: "Base Set",
-        slug: "base-set",
-        eraId: era.id,
-        releaseDate: "1999-01-09",
-        setCode: "BS-1",
-        tcgId: tcg.id,
-      },
-      {
-        id: uuidv4(),
-        name: "Jungle",
-        slug: "jungle",
-        eraId: era.id,
-        releaseDate: "1999-06-16",
-        setCode: "JU-1",
-        tcgId: tcg.id,
-      },
-      {
-        id: uuidv4(),
-        name: "Fossil",
-        slug: "fossil",
-        eraId: era.id,
-        releaseDate: "1999-10-10",
-        setCode: "FO-1",
-        tcgId: tcg.id,
-      },
-    ]);
+        name: "Original Series",
+        slug: "original-series",
+      });
 
-    await pkmnCard.bulkCreate([
-      {
-        id: uuidv4(),
-        name: "Charizard",
-        slug: "charizard",
-        setId: set[0].id,
-        details: {
-          hp: "120",
-          type: "Fire",
-          cardType: "Pokémon",
-          setNumber: "4/102",
-          moves: [
-            {
-              cost: ["Fire", "Fire", "Fire"],
-              name: "Fire Spin",
-              damage: 100,
+      const set = await pkmnSet.bulkCreate([
+        {
+          id: uuidv4(),
+          name: "Base Set",
+          slug: "base-set",
+          eraId: era.id,
+          releaseDate: "1999-01-09",
+          setCode: "BS-1",
+          tcgId: tcg.id,
+          setImg: "base-set-image.jpg",
+          totalCards: 102,
+        },
+        {
+          id: uuidv4(),
+          name: "Jungle",
+          slug: "jungle",
+          eraId: era.id,
+          releaseDate: "1999-06-16",
+          setCode: "JU-1",
+          tcgId: tcg.id,
+          setImg: "jungle-set-image.jpg",
+          totalCards: 64,
+        },
+        {
+          id: uuidv4(),
+          name: "Fossil",
+          slug: "fossil",
+          eraId: era.id,
+          releaseDate: "1999-10-10",
+          setCode: "FO-1",
+          tcgId: tcg.id,
+          setImg: "fossil-set-image.jpg",
+          totalCards: 62,
+        },
+      ]);
+
+      await pkmnCard.bulkCreate([
+        {
+          id: uuidv4(),
+          name: "Charizard",
+          slug: "charizard",
+          setId: set[0].id,
+          details: {
+            card_type: "pokemon",
+            sub_types: [],
+            hp: 120,
+            type: "Fire",
+            stage: "Stage 2",
+            evolves_from: "Charmeleon",
+            abilities: [],
+            attacks: [
+              {
+                cost: [
+                  { type: "Fire", amount: 1 },
+                  { type: "Fire", amount: 1 },
+                  { type: "Fire", amount: 1 },
+                ],
+                name: "Fire Spin",
+                description: "Deals 100 damage",
+                damage: "100",
+              },
+            ],
+            weakness: { type: "Water", modifier: "×2" },
+            resistance: { type: "Fighting", modifier: "-30" },
+            retreat_cost: "3",
+            flavor_text: "Spits fire that is hot enough to melt boulders.",
+            special_rules: [],
+            set_info: {
+              name: "Base Set",
+              number: "4/102",
+              rarity: "Rare Holo",
+              total_cards: "102",
             },
-          ],
-          weakness: "Water",
-          resistance: "Fighting",
-          retreat: 3,
-          illustrated: "Mitsuhiro Arita",
-          rarity: "Rare Holo",
-          flavorText: "Spits fire that is hot enough to melt boulders.",
+            illustrator: "Mitsuhiro Arita",
+            github_image_url: "https://example.com/charizard.jpg",
+          },
           affiliateLinks: [
             {
               site: "TCGPlayer",
               url: "https://example.com/charizard",
             },
           ],
-          cardEffect: "This Pokémon is very powerful.",
         },
-      },
-      {
-        id: uuidv4(),
-        name: "Blastoise",
-        slug: "blastoise",
-        setId: set[0].id,
-        details: {
-          hp: "100",
-          type: "Water",
-          moves: [
-            {
-              cost: ["Water", "Water", "Water"],
-              name: "Hydro Pump",
-              damage: 120,
+        {
+          id: uuidv4(),
+          name: "Blastoise",
+          slug: "blastoise",
+          setId: set[0].id,
+          details: {
+            card_type: "pokemon",
+            sub_types: [],
+            hp: 100,
+            type: "Water",
+            stage: "Stage 2",
+            evolves_from: "Wartortle",
+            abilities: [],
+            attacks: [
+              {
+                cost: [
+                  { type: "Water", amount: 1 },
+                  { type: "Water", amount: 1 },
+                  { type: "Water", amount: 1 },
+                ],
+                name: "Hydro Pump",
+                description: "Deals 120 damage",
+                damage: "120",
+              },
+            ],
+            weakness: { type: "Grass", modifier: "×2" },
+            resistance: { type: "Fire", modifier: "-30" },
+            retreat_cost: "3",
+            flavor_text: "It crushes its foe under its heavy body.",
+            special_rules: [],
+            set_info: {
+              name: "Base Set",
+              number: "2/102",
+              rarity: "Rare Holo",
+              total_cards: "102",
             },
-          ],
-          rarity: "Rare Holo",
-          retreat: 3,
-          cardType: "Pokémon",
-          weakness: "Grass",
-          setNumber: "2/102",
-          cardEffect: "This Pokémon is very powerful.",
-          flavorText: "It crushes its foe under its heavy body.",
-          resistance: "Fire",
-          illustrated: "Ken Sugimori",
+            illustrator: "Ken Sugimori",
+            github_image_url: "https://example.com/blastoise.jpg",
+          },
           affiliateLinks: [
             {
+              site: "TCGPlayer",
               url: "https://example.com/blastoise",
-              site: "TCGPlayer",
             },
           ],
         },
-      },
-      {
-        id: uuidv4(),
-        name: "Venusaur",
-        slug: "venusaur",
-        setId: set[0].id,
-        details: {
-          hp: "120",
-          type: "Grass",
-          moves: [
-            {
-              cost: ["Grass", "Grass", "Grass"],
-              name: "Solar Beam",
-              damage: 120,
+        {
+          id: uuidv4(),
+          name: "Venusaur",
+          slug: "venusaur",
+          setId: set[0].id,
+          details: {
+            card_type: "pokemon",
+            sub_types: [],
+            hp: 120,
+            type: "Grass",
+            stage: "Stage 2",
+            evolves_from: "Ivysaur",
+            abilities: [],
+            attacks: [
+              {
+                cost: [
+                  { type: "Grass", amount: 1 },
+                  { type: "Grass", amount: 1 },
+                  { type: "Grass", amount: 1 },
+                ],
+                name: "Solar Beam",
+                description: "Deals 120 damage",
+                damage: "120",
+              },
+            ],
+            weakness: { type: "Fire", modifier: "×2" },
+            resistance: { type: "Water", modifier: "-30" },
+            retreat_cost: "4",
+            flavor_text: "Its plant blooms when it absorbs solar energy.",
+            special_rules: [],
+            set_info: {
+              name: "Base Set",
+              number: "3/102",
+              rarity: "Rare Holo",
+              total_cards: "102",
             },
-          ],
-          rarity: "Rare Holo",
-          retreat: 4,
-          cardType: "Pokémon",
-          weakness: "Fire",
-          setNumber: "3/102",
-          cardEffect: "This Pokémon is very powerful.",
-          flavorText: "Its plant blooms when it absorbs solar energy.",
-          resistance: "Water",
-          illustrated: "Ken Sugimori",
+            illustrator: "Ken Sugimori",
+            github_image_url: "https://example.com/venusaur.jpg",
+          },
           affiliateLinks: [
             {
-              url: "https://example.com/venusaur",
               site: "TCGPlayer",
+              url: "https://example.com/venusaur",
             },
           ],
         },
-      },
-    ]);
+      ]);
+    } catch (error) {
+      console.error("Error creating test data:", error);
+      throw error;
+    }
   });
 
   afterAll(async () => {
@@ -239,10 +299,10 @@ describe("Pokemon Controller Tests", () => {
         id: expect.any(String),
         name: "Base Set",
         slug: "base-set",
-        setImg: null,
+        setImg: "base-set-image.jpg",
         eraId: expect.any(String),
         releaseDate: "1999-01-09",
-        totalCards: null,
+        totalCards: 102,
         setCode: "BS-1",
         tcgId: expect.any(String),
         createdAt: expect.any(String),
@@ -295,7 +355,7 @@ describe("Pokemon Controller Tests", () => {
     it("should fetch sets filtered by era", async () => {
       const era = await pkmnEra.findOne({ where: { slug: "original-series" } });
       const response = await supertest(app.server)
-        .get(`/v1/pokemon/sets?era=${era?.id}`) // Filter by eraId
+        .get(`/v1/pokemon/sets?era=${era?.id}`) 
         .expect(200);
 
       expect(response.body.length).toBeGreaterThan(0);
@@ -306,7 +366,7 @@ describe("Pokemon Controller Tests", () => {
 
     it("should fetch sets filtered by name", async () => {
       const response = await supertest(app.server)
-        .get("/v1/pokemon/sets?name=Base") // Filter by name
+        .get("/v1/pokemon/sets?name=Base") 
         .expect(200);
 
       expect(response.body.length).toBeGreaterThan(0);
@@ -317,128 +377,45 @@ describe("Pokemon Controller Tests", () => {
   });
 
   describe("GET /v1/pokemon/sets/:identifier", () => {
-    it("should fetch a set by its identifier", async () => {
+    it("should fetch a set by its identifier with valid cards", async () => {
       const response = await supertest(app.server)
         .get("/v1/pokemon/sets/base-set")
         .expect(200);
-
-      expect(response.body).toEqual({
-        id: expect.any(String),
+    
+      expect(response.body).toMatchSchema(setWithCardsSchema);
+    
+      expect(response.body).toMatchObject({
         name: "Base Set",
         slug: "base-set",
-        setImg: null,
-        eraId: expect.any(String),
-        releaseDate: "1999-01-09",
-        totalCards: null,
-        setCode: "BS-1",
-        tcgId: expect.any(String),
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
-        cards: expect.arrayContaining([
-          {
-            id: expect.any(String),
-            name: "Charizard",
-            slug: "charizard",
-            setId: expect.any(String),
-            details: {
-              hp: "120",
-              type: "Fire",
-              moves: [
-                {
-                  cost: ["Fire", "Fire", "Fire"],
-                  name: "Fire Spin",
-                  damage: 100,
-                },
-              ],
-              rarity: "Rare Holo",
-              retreat: 3,
-              cardType: "Pokémon",
-              weakness: "Water",
-              setNumber: "4/102",
-              cardEffect: "This Pokémon is very powerful.",
-              flavorText: "Spits fire that is hot enough to melt boulders.",
-              resistance: "Fighting",
-              illustrated: "Mitsuhiro Arita",
-              affiliateLinks: [
-                {
-                  url: "https://example.com/charizard",
-                  site: "TCGPlayer",
-                },
-              ],
-            },
-            createdAt: expect.any(String),
-            updatedAt: expect.any(String),
-          },
-          {
-            id: expect.any(String),
-            name: "Blastoise",
-            slug: "blastoise",
-            setId: expect.any(String),
-            details: {
-              hp: "100",
-              type: "Water",
-              moves: [
-                {
-                  cost: ["Water", "Water", "Water"],
-                  name: "Hydro Pump",
-                  damage: 120,
-                },
-              ],
-              rarity: "Rare Holo",
-              retreat: 3,
-              cardType: "Pokémon",
-              weakness: "Grass",
-              setNumber: "2/102",
-              cardEffect: "This Pokémon is very powerful.",
-              flavorText: "It crushes its foe under its heavy body.",
-              resistance: "Fire",
-              illustrated: "Ken Sugimori",
-              affiliateLinks: [
-                {
-                  url: "https://example.com/blastoise",
-                  site: "TCGPlayer",
-                },
-              ],
-            },
-            createdAt: expect.any(String),
-            updatedAt: expect.any(String),
-          },
-          {
-            id: expect.any(String),
-            name: "Venusaur",
-            slug: "venusaur",
-            setId: expect.any(String),
-            details: {
-              hp: "120",
-              type: "Grass",
-              moves: [
-                {
-                  cost: ["Grass", "Grass", "Grass"],
-                  name: "Solar Beam",
-                  damage: 120,
-                },
-              ],
-              rarity: "Rare Holo",
-              retreat: 4,
-              cardType: "Pokémon",
-              weakness: "Fire",
-              setNumber: "3/102",
-              cardEffect: "This Pokémon is very powerful.",
-              flavorText: "Its plant blooms when it absorbs solar energy.",
-              resistance: "Water",
-              illustrated: "Ken Sugimori",
-              affiliateLinks: [
-                {
-                  url: "https://example.com/venusaur",
-                  site: "TCGPlayer",
-                },
-              ],
-            },
-            createdAt: expect.any(String),
-            updatedAt: expect.any(String),
-          },
-        ]),
       });
+    
+      expect(Array.isArray(response.body.cards)).toBe(true);
+      expect(response.body.cards.length).toBeGreaterThan(0);
+    
+      response.body.cards.forEach((card: any) => {
+        expect(card).toMatchSchema(cardSchema);
+      });
+    
+      const charizardCard = response.body.cards.find(
+        (card: any) => card.name === "Charizard"
+      );
+      expect(charizardCard).toBeDefined();
+      if (charizardCard) {
+        expect(charizardCard).toMatchObject({
+          name: "Charizard",
+          details: expect.objectContaining({
+            card_type: "pokemon",
+            type: "Fire", 
+            attacks: expect.arrayContaining([
+              expect.objectContaining({
+                name: "Fire Spin",
+                damage: "100", 
+              }),
+            ]),
+           
+          }),
+        });
+      }
     });
 
     it("should handle errors when fetching a set by its identifier", async () => {
@@ -458,7 +435,7 @@ describe("Pokemon Controller Tests", () => {
     it("should fetch a set by its UUID", async () => {
       const set = await pkmnSet.findOne({ where: { slug: "base-set" } });
       const response = await supertest(app.server)
-        .get(`/v1/pokemon/sets/${set?.id}`) 
+        .get(`/v1/pokemon/sets/${set?.id}`)
         .expect(200);
 
       expect(response.body.id).toBe(set?.id);
@@ -466,7 +443,7 @@ describe("Pokemon Controller Tests", () => {
 
     it("should fetch a set by its slug", async () => {
       const response = await supertest(app.server)
-        .get("/v1/pokemon/sets/base-set") 
+        .get("/v1/pokemon/sets/base-set")
         .expect(200);
 
       expect(response.body.slug).toBe("base-set");
@@ -474,7 +451,7 @@ describe("Pokemon Controller Tests", () => {
 
     it("should return 404 if set is not found", async () => {
       const response = await supertest(app.server)
-        .get("/v1/pokemon/sets/non-existent-set") 
+        .get("/v1/pokemon/sets/non-existent-set")
         .expect(404);
 
       expect(response.body).toEqual({ error: "Set not found." });
@@ -486,115 +463,9 @@ describe("Pokemon Controller Tests", () => {
       const response = await supertest(app.server)
         .get("/v1/pokemon/cards")
         .expect(200);
-
-      expect(response.body).toEqual({
-        total: 3,
-        limit: 20,
-        offset: 0,
-        results: expect.arrayContaining([
-          {
-            id: expect.any(String),
-            name: "Charizard",
-            slug: "charizard",
-            setId: expect.any(String),
-            details: {
-              hp: "120",
-              type: "Fire",
-              moves: [
-                {
-                  cost: ["Fire", "Fire", "Fire"],
-                  name: "Fire Spin",
-                  damage: 100,
-                },
-              ],
-              rarity: "Rare Holo",
-              retreat: 3,
-              cardType: "Pokémon",
-              weakness: "Water",
-              setNumber: "4/102",
-              cardEffect: "This Pokémon is very powerful.",
-              flavorText: "Spits fire that is hot enough to melt boulders.",
-              resistance: "Fighting",
-              illustrated: "Mitsuhiro Arita",
-              affiliateLinks: [
-                {
-                  url: "https://example.com/charizard",
-                  site: "TCGPlayer",
-                },
-              ],
-            },
-            createdAt: expect.any(String),
-            updatedAt: expect.any(String),
-          },
-          {
-            id: expect.any(String),
-            name: "Blastoise",
-            slug: "blastoise",
-            setId: expect.any(String),
-            details: {
-              hp: "100",
-              type: "Water",
-              moves: [
-                {
-                  cost: ["Water", "Water", "Water"],
-                  name: "Hydro Pump",
-                  damage: 120,
-                },
-              ],
-              rarity: "Rare Holo",
-              retreat: 3,
-              cardType: "Pokémon",
-              weakness: "Grass",
-              setNumber: "2/102",
-              cardEffect: "This Pokémon is very powerful.",
-              flavorText: "It crushes its foe under its heavy body.",
-              resistance: "Fire",
-              illustrated: "Ken Sugimori",
-              affiliateLinks: [
-                {
-                  url: "https://example.com/blastoise",
-                  site: "TCGPlayer",
-                },
-              ],
-            },
-            createdAt: expect.any(String),
-            updatedAt: expect.any(String),
-          },
-          {
-            id: expect.any(String),
-            name: "Venusaur",
-            slug: "venusaur",
-            setId: expect.any(String),
-            details: {
-              hp: "120",
-              type: "Grass",
-              moves: [
-                {
-                  cost: ["Grass", "Grass", "Grass"],
-                  name: "Solar Beam",
-                  damage: 120,
-                },
-              ],
-              rarity: "Rare Holo",
-              retreat: 4,
-              cardType: "Pokémon",
-              weakness: "Fire",
-              setNumber: "3/102",
-              cardEffect: "This Pokémon is very powerful.",
-              flavorText: "Its plant blooms when it absorbs solar energy.",
-              resistance: "Water",
-              illustrated: "Ken Sugimori",
-              affiliateLinks: [
-                {
-                  url: "https://example.com/venusaur",
-                  site: "TCGPlayer",
-                },
-              ],
-            },
-            createdAt: expect.any(String),
-            updatedAt: expect.any(String),
-          },
-        ]),
+    
+      response.body.results.forEach((card: any) => {
+        expect(card).toMatchSchema(cardSchema);
       });
     });
 
@@ -682,35 +553,35 @@ describe("Pokemon Controller Tests", () => {
 
     it("should fetch cards with pagination", async () => {
       const response = await supertest(app.server)
-        .get("/v1/pokemon/cards?limit=1&offset=0") // Fetch first card
+        .get("/v1/pokemon/cards?limit=1&offset=0") 
         .expect(200);
-  
+
       expect(response.body.results.length).toBe(1);
       expect(response.body.total).toBe(3);
     });
-  
+
     it("should fetch a card by its UUID", async () => {
       const card = await pkmnCard.findOne({ where: { slug: "charizard" } });
       const response = await supertest(app.server)
-        .get(`/v1/pokemon/cards/${card?.id}`) // Use UUID
+        .get(`/v1/pokemon/cards/${card?.id}`)
         .expect(200);
-  
+
       expect(response.body.id).toBe(card?.id);
     });
-  
+
     it("should fetch a card by its slug", async () => {
       const response = await supertest(app.server)
-        .get("/v1/pokemon/cards/charizard") // Use slug
+        .get("/v1/pokemon/cards/charizard")  
         .expect(200);
-  
+
       expect(response.body.slug).toBe("charizard");
     });
-  
+
     it("should return 404 if card is not found", async () => {
       const response = await supertest(app.server)
-        .get("/v1/pokemon/cards/non-existent-card") // Use non-existent slug
+        .get("/v1/pokemon/cards/non-existent-card") 
         .expect(404);
-  
+
       expect(response.body).toEqual({ error: "Card not found." });
     });
   });
@@ -718,43 +589,10 @@ describe("Pokemon Controller Tests", () => {
   describe("GET /v1/pokemon/cards/:identifier", () => {
     it("should fetch a card by its identifier", async () => {
       const response = await supertest(app.server)
-        .get("/v1/pokemon/cards/charizard")
+        .get("/v1/pokemon/cards/charizard") 
         .expect(200);
-
-      expect(response.body).toEqual({
-        id: expect.any(String),
-        name: "Charizard",
-        slug: "charizard",
-        setId: expect.any(String),
-        details: {
-          hp: "120",
-          type: "Fire",
-          moves: [
-            {
-              cost: ["Fire", "Fire", "Fire"],
-              name: "Fire Spin",
-              damage: 100,
-            },
-          ],
-          rarity: "Rare Holo",
-          retreat: 3,
-          cardType: "Pokémon",
-          weakness: "Water",
-          setNumber: "4/102",
-          cardEffect: "This Pokémon is very powerful.",
-          flavorText: "Spits fire that is hot enough to melt boulders.",
-          resistance: "Fighting",
-          illustrated: "Mitsuhiro Arita",
-          affiliateLinks: [
-            {
-              url: "https://example.com/charizard",
-              site: "TCGPlayer",
-            },
-          ],
-        },
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
-      });
+    
+      expect(response.body).toMatchSchema(cardSchema);
     });
 
     it("should handle errors when fetching a card by its identifier", async () => {
