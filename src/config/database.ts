@@ -15,12 +15,12 @@ export const sequelize = new Sequelize(
   }
 );
 
-// (async () => {
-//   try {
+(async () => {
+  try {
   
-//     await sequelize.authenticate();
-//     await sequelize.sync()
-//   } catch (error) {
-//     console.error("Unable to connect to PostgreSQL:", error);
-//   }
-// })();
+    await sequelize.authenticate();
+    await sequelize.sync()
+  } catch (error) {
+    console.error("Unable to connect to PostgreSQL:", error);
+  }
+})();

@@ -2,8 +2,9 @@ import { buildFastify } from "./utils/buildFastify";
 import { sequelize } from "./config/database";
 import { redis } from "./config/redis";
 import { env } from "./config/env";
-import TCG from "./models/tcgModels"
-import { pkmnSet, pkmnEra, pkmnCard } from './models/pokemonModels'
+import TCG from "./models/tcgModels";
+import { pkmnSet, pkmnEra, pkmnCard } from "./models/pokemonModels";
+import { APIKey } from "./models/APIKeysModel";
 
 const start = async () => {
   const server = buildFastify();
@@ -12,7 +13,7 @@ const start = async () => {
     await sequelize.authenticate();
     console.log("Database authenticated");
 
-    
+    console.log('APIKey Model:', APIKey)
 
     await sequelize.sync();
 

@@ -46,7 +46,7 @@ export interface PkmnCardDetails {
   type?: string;
   stage?: string;
   evolves_from?: string;
-  evolves_into?: string;
+  evolves_into?: string[];
 
   // Attacks & Abilities
   abilities: Ability[];
@@ -78,6 +78,15 @@ interface AffiliateLink {
   url: string;
 }
 
+export interface pkmnCardAttributes {
+  id: string;
+  name: string;
+  slug: string;
+  setId: string;
+  details: PkmnCardDetails;
+  affiliateLinks?: AffiliateLink[];
+}
+
 export interface pkmnEraAttributes {
   id: string;
   name: string;
@@ -90,20 +99,13 @@ export interface pkmnSetAttributes {
   slug: string;
   setImg?: string;
   eraId: string;
-  releaseDate: string;
+  releaseDate?: string;
   totalCards?: number;
   setCode?: string;
   tcgId: string;
 }
 
-export interface pkmnCardAttributes {
-  id: string;
-  name: string;
-  slug: string;
-  setId: string;
-  details: PkmnCardDetails;
-  affiliateLinks?: AffiliateLink[]; // Moved to top level
-}
+
 
 //////////////////// pkmnEra ////////////////////
 
@@ -153,7 +155,7 @@ export class pkmnSet
   public slug!: string;
   public setImg?: string;
   public eraId!: string;
-  public releaseDate!: string;
+  public releaseDate?: string;
   public totalCards?: number;
   public setCode?: string;
   public tcgId!: string;
