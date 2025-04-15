@@ -43,6 +43,7 @@ export const getTCGByIdentifier = async (request: FastifyRequest<{ Params: TCGPa
   export const postTCG = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { name, slug, img } = request.body as TCGCreationAttributes;
+      console.log(`\n\n\n\n\n\n\n\n\n\n${JSON.stringify(request.body)}\n\n\n\n\n\n\n`)
       const id = uuidv4()
       const tcg = await TCG.create({ id, name, slug, img });
       reply.status(201).send(tcg);

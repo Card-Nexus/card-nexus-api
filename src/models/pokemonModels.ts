@@ -33,7 +33,7 @@ interface SetInfo {
   name: string;
   number: string;
   rarity: string;
-  total_cards: string;
+  totalCards: string;
 }
 
 export interface PkmnCardDetails {
@@ -45,8 +45,8 @@ export interface PkmnCardDetails {
   hp?: number | string;
   type?: string;
   stage?: string;
-  evolves_from?: string;
-  evolves_into?: string[];
+  evolvesFrom?: string;
+  evolvesInto?: string[];
 
   // Attacks & Abilities
   abilities: Ability[];
@@ -55,19 +55,19 @@ export interface PkmnCardDetails {
   // Weakness/Resistance/Retreat
   weakness?: WeaknessResistance;
   resistance?: WeaknessResistance;
-  retreat_cost?: string;
+  retreatCost?: string;
 
   // Card text
-  rules_text?: string;
-  flavor_text?: string;
-  special_rules?: string[];
+  rulesText?: string;
+  flavorText?: string;
+  specialRules?: string[];
 
   // Visuals
-  image_url?: string;
-  github_image_url?: string;
+  imageUrl?: string;
+  githubImageUrl?: string;
 
   // Set info
-  set_info: SetInfo;
+  setInfo: SetInfo;
 
   // Creator
   illustrator: string;
@@ -191,7 +191,7 @@ pkmnSet.init(
     },
     releaseDate: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     totalCards: {
       type: DataTypes.INTEGER,

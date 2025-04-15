@@ -1,16 +1,14 @@
 // src/hooks/authenticationHook.ts
-import { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
-import APIKey from '../models/APIKeysModel'; 
+import { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from "fastify";
+import APIKey from "../models/APIKeysModel";
 export const authenticate = async (
   request: FastifyRequest,
-  reply: FastifyReply,
-  done: HookHandlerDoneFunction
+  reply: FastifyReply
 ) => {
-  const apiKey = request.headers['x-api-key'] as string | undefined;
+  const apiKey = request.headers["x-api-key"] as string | undefined;
 
   if (!apiKey) {
-    reply.status(401).send({ error: 'Unauthorized: API key missing' });
-    return done(new Error('Unauthorized'));
+    return reply.status(401).send({ error: "Unauthorized: API key missing" });
   }
 
   try {
@@ -18,19 +16,18 @@ export const authenticate = async (
       where: {
         key: apiKey,
         isActive: true,
-        usageType: 'scraper', 
+        usageType: "scraper",
       },
     });
 
-    if (validKey) {
-      done(); 
-    } else {
-      reply.status(401).send({ error: 'Unauthorized: Invalid API key' });
-      done(new Error('Unauthorized'));
+    if (!validKey) {
+      return reply.status(401).send({ error: "Unauthorized: Invalid API key" });
     }
-  } catch (error : any) {
-    console.error('Error during API key authentication:', error);
-    reply.status(500).send({ error: 'Internal server error during authentication' });
-    done(error);
+    // No explicit return needed - just fall through
+  } catch (error) {
+    request.log.error("Authentication error:", error);
+    return reply
+      .status(500)
+      .send({ error: "Internal server error during authentication" });
   }
 };
