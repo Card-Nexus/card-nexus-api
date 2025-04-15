@@ -5,14 +5,14 @@ export interface TCGAttributes {
     id: string;
     name: string;
     slug: string;
-    img: string;
+    img?: string;
 }
 
 export class TCG extends Model<TCGAttributes> implements TCGAttributes {
     public id!: string;
     public name!: string;
     public slug!: string;
-    public img!: string;
+    public img?: string;
 }
 
 TCG.init(
